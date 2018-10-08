@@ -50,7 +50,7 @@ object Ingester {
 
   def writeToTempFile(in: Stream[IO, Byte]): IO[File] =
     for {
-      f ← IO { File.createTempFile("aws", "tmp", new File(".")) }
+      f ← IO { File.createTempFile("aws", ".tmp", new File(".")) }
       _ ← IO { f.deleteOnExit }
       _ ← in.to(file.writeAll(f.toPath)).compile.drain
     } yield (f)
