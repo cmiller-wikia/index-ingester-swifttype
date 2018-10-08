@@ -17,49 +17,6 @@ case class IngestResponse(id: Option[String], errors: List[String]) {
     if (errors.isEmpty) IngestSuccess(id) else RejectedDocument(id, errors)
 }
 
-case class SwiftDocument(doc: JsonObject) extends AnyVal {
-  def id: Option[String] =
-    doc("id").flatMap(_.asString)
-}
-
-case object SwiftDocument {
-  val logger = Logger("MainLog")
-  def from(obj: JsonObject) = SwiftDocument(shrink(JsonObject.fromIterable(
-    obj.toIterable.map {
-      case ("objectID", oid) ⇒ ("id", oid)
-      case ("last_updated", lastUpdated) ⇒ ("last_updated", lastUpdated.asNumber.flatMap(_.toLong).map(util.timestampToIso(_)).map(_.asJson).getOrElse(lastUpdated))
-      case x ⇒ x
-    }
-  )))
-
-  def truncate(in: String): String = {
-    var s: String = in.substring(0, Math.min(in.length, 90000))
-
-    while (s.getBytes("UTF-8").length > 90000) {
-      s = s.substring(0, Math.round(s.length.toFloat * 0.9f))
-    }
-
-    s
-  }
-
-  def shrink(obj: JsonObject): JsonObject = {
-    val id = obj("id")
-    val size = obj.asJson.noSpaces.getBytes("UTF-8").length
-    if (size > 90000) {
-      logger.error("Truncating too-large page " + id.toString)
-      JsonObject.fromIterable(
-        obj.toIterable.map {
-          case ("content", content) ⇒
-            ("content", Json.fromString(truncate(content.asString.getOrElse(""))))
-          case x ⇒ x
-        }
-      )
-    } else {
-      obj
-    }
-  }
-}
-
 sealed trait IngestResult
 
 case class IngestSuccess(id: Option[String]) extends IngestResult
@@ -108,14 +65,6 @@ class SwiftType(val engineName: String, val apiUri: HttpUrl, val apiKey: String)
 
   val MEDIA_JSON = MediaType.parse("application/json")
 
-  def request(documents: List[Json]): Request = {
-    new Request.Builder()
-      .post(RequestBody.create(MEDIA_JSON, Json.fromValues(documents).noSpaces))
-      .addHeader("Authorization", "Bearer " + apiKey)
-      .url(addDocumentUri)
-      .build()
-  }
-
   def streamRequest(
     client: OkHttpClient,
     docs: List[SwiftDocument],
@@ -134,6 +83,15 @@ class SwiftType(val engineName: String, val apiUri: HttpUrl, val apiKey: String)
     IO {
       util.withResources(client.newCall(request(documents.map(_.asJson))).execute())(_.body.string)
     }
+
+  def request(documents: List[Json]): Request = {
+    new Request.Builder()
+      .post(RequestBody.create(MEDIA_JSON, Json.fromValues(documents).noSpaces))
+      .addHeader("Authorization", "Bearer " + apiKey)
+      .url(addDocumentUri)
+      .build()
+  }
+
 }
 
 object SwiftType {
