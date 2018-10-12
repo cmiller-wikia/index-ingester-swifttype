@@ -2,12 +2,12 @@ import sbt._
 
 object CommonDeps {
   object v {
-    val cats = "1.2.0"
+    val cats = "1.4.0"
     val catsmtl = "0.2.1"
-    val catseff = "1.0.0-RC"
+    val catseff = "1.0.0"
     val doobie = "0.4.4"
-    val circe = "0.9.3"
-    val fs2 = "0.10.5"
+    val circe = "0.10.0"
+    val fs2 = "1.0.0"
     val h2 = "1.4.195"
     val http4s = "0.18.15"
     val logback = "1.2.3"
@@ -18,7 +18,6 @@ object CommonDeps {
 
   val cats = Seq (
     "org.typelevel" %% "cats-core" % v.cats,
-    "org.typelevel" %% "cats-mtl-core" % v.catsmtl,
     "org.typelevel" %% "cats-effect" % v.catseff,
     "org.typelevel" %% "cats-laws" % v.cats % "test"
   )

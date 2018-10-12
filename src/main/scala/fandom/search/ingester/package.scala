@@ -1,7 +1,7 @@
 package fandom.search
 
 import cats.effect.Sync
-import fs2.Stream
+import fs2.{ Stream, Pipe }
 import scala.util.control.NonFatal
 import okhttp3._
 import Predef.wrapString
@@ -19,6 +19,9 @@ package ingester {
   }
 
   object util {
+    def batchBy[F[_], A](maxBatchSize: Int): Pipe[F, A, List[A]] =
+      _.chunkN(maxBatchSize, true).map(_.toList)
+
     def timestampToIso(ts: Long) = java.time.format.DateTimeFormatter.ISO_INSTANT.format(
       java.time.Instant.ofEpochSecond(ts)
     )

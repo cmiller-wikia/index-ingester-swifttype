@@ -5,7 +5,7 @@ lazy val root = (project in file("."))
   .settings(CommonSettings.console)
   .settings(Seq(
     organization := "fandom.com",
-    name := "index-ingester",
+    name := "index-ingester2",
     description := "SwiftType Index Ingester (Experimental)",
     version := "0.5"
   ))
@@ -16,8 +16,8 @@ lazy val root = (project in file("."))
       CommonDeps.scalatest ++
       CommonDeps.logging ++
       Seq(
-        "co.fs2" %% "fs2-io" % "0.10.5",
-        "io.circe" %% "circe-fs2" % "0.9.0",
+        "co.fs2" %% "fs2-io" % CommonDeps.v.fs2,
+        "io.circe" %% "circe-fs2" % "0.10.0",
         "com.squareup.okhttp3" % "okhttp" % "3.11.0",
         "com.amazonaws" % "aws-java-sdk-s3" % "1.11.390"
       ),

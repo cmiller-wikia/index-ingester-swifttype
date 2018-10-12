@@ -3,7 +3,6 @@ package fandom.search.ingester
 import fs2.Stream
 import fs2.io
 import scala.util.Try
-import cats.syntax.flatMap._
 import cats.effect._
 import java.io.File
 import com.amazonaws.services.s3.AmazonS3
@@ -48,9 +47,11 @@ class S3Uploader(bucket: S3Bucket, manager: TransferManager) {
 
 class S3Downloader(bucket: S3Bucket, client: AmazonS3) {
   val logger = Logger("DownloaderLog")
-  def download(key: String): Stream[IO, Byte] =
+  def download(key: String)(implicit ec: ExecutionContext, cs: ContextShift[IO]): Stream[IO, Byte] =
     io.readInputStream[IO](
       IO { logger.info("Processing: " + key); client.getObject(bucket.value, key).getObjectContent },
-      16 * 4096
+      16 * 4096,
+      ec,
+      true
     )
 }
