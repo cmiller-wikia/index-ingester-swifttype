@@ -40,29 +40,9 @@ object Jinni {
         _ >>= { _.shutdown }
       }
 
-  def extractFlaggedWikis[F[_]: Sync: ContextShift]: List[Sink[F, Json]] = wikis.map {
-    case (path, id) ⇒ extractWiki(id, path)
-  }
-
-  def extractWiki[F[_]: Sync: ContextShift](wikiId: String, outFile: Path): Sink[F, Json] =
-    _.through(filterWiki(wikiId))
-      .map(_.noSpaces)
-      .intersperse("\n")
-      .through(text.utf8Encode)
-      .to(file.writeAll(outFile, ioThreadPool))
-
   def filterWikis(c: Clients): IO[Unit] =
-    filterFromS3(new S3Downloader(S3Bucket(s3Bucket), c.s3)) >> reuploadResults(new S3Uploader(S3Bucket(s3Bucket), c.s3Txfr))
-
-  def reuploadResults(uploader: S3Uploader): IO[Unit] =
-    Stream.emits(wikis.map(_._1).map(_.toFile))
-      .map(uploader.uploader(5)(_))
-      .parJoin(3)
-      .compile
-      .drain
-
-  def filterWiki[F[_]](wikiId: String): Pipe[F, Json, Json] =
-    _.filter(_.hcursor.get[String]("wiki_id").toOption == Some(wikiId))
+    filterFromS3(new S3Downloader(S3Bucket(s3Bucket), c.s3)) >>
+      reuploadResults(new S3Uploader(S3Bucket(s3Bucket), c.s3Txfr))
 
   def filterFromS3(s3: S3Downloader): IO[Unit] = {
     Stream.emits(fileNames)
@@ -75,4 +55,26 @@ object Jinni {
       .compile
       .drain
   }
+
+  def reuploadResults(uploader: S3Uploader): IO[Unit] =
+    Stream.emits(wikis.map(_._1).map(_.toFile))
+      .map(uploader.uploader(5)(_))
+      .parJoin(3)
+      .compile
+      .drain
+
+  def extractFlaggedWikis[F[_]: Sync: ContextShift]: List[Sink[F, Json]] = wikis.map {
+    case (path, id) ⇒ extractWiki(id, path)
+  }
+
+  def extractWiki[F[_]: Sync: ContextShift](wikiId: String, outFile: Path): Sink[F, Json] =
+    _.through(filterWiki(wikiId))
+      .map(_.noSpaces)
+      .intersperse("\n")
+      .through(text.utf8Encode)
+      .to(file.writeAll(outFile, ioThreadPool))
+
+  def filterWiki[F[_]](wikiId: String): Pipe[F, Json, Json] =
+    _.filter(_.hcursor.get[String]("wiki_id").toOption == Some(wikiId))
+
 }
