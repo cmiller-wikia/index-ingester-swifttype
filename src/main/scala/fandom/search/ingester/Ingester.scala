@@ -29,9 +29,11 @@ object Ingester {
 
   def indexFromS3(httpClient: OkHttpClient, s3: S3Downloader, swiftType: SwiftType): Stream[IO, Unit] = {
     Stream.emits(fileNames)
-      .flatMap(s3.download)
-      .through(spoolToTempFile)
-      .through(streamJson)
+      .flatMap(
+        s3.download(_)
+          .through(spoolToTempFile)
+          .through(streamJson)
+      )
       .through(skipIfNotJsonObject)
       .through(util.batchBy(100))
       .map(swiftType.index(httpClient))

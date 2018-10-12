@@ -17,6 +17,7 @@ lazy val root = (project in file("."))
       CommonDeps.logging ++
       Seq(
         "co.fs2" %% "fs2-io" % CommonDeps.v.fs2,
+        "io.circe" %% "circe-literal" % CommonDeps.v.circe,
         "io.circe" %% "circe-fs2" % "0.10.0",
         "com.squareup.okhttp3" % "okhttp" % "3.11.0",
         "com.amazonaws" % "aws-java-sdk-s3" % "1.11.390"

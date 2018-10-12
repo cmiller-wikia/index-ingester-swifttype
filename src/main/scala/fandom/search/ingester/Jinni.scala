@@ -16,7 +16,6 @@ import Predef.ArrowAssoc
 import files._
 
 object Jinni {
-  val logger = Logger("JinniLog")
   implicit val ioThreadPool = ExecutionContext.fromExecutorService(java.util.concurrent.Executors.newCachedThreadPool())
   implicit val ctxShift = IO.contextShift(ioThreadPool)
   val fileNames: Seq[String] = Range(0, 26).map("verbose-%06d.json".format(_))
@@ -67,9 +66,11 @@ object Jinni {
 
   def filterFromS3(s3: S3Downloader): IO[Unit] = {
     Stream.emits(fileNames)
-      .flatMap(s3.download)
-      .through(spoolToTempFile)
-      .through(streamJson)
+      .flatMap(
+        s3.download(_)
+          .through(spoolToTempFile)
+          .through(streamJson)
+      )
       .broadcastTo(extractFlaggedWikis[IO]: _*)
       .compile
       .drain
